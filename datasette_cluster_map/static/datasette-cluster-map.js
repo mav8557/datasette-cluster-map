@@ -205,6 +205,10 @@ const addClusterMap = (latitudeColumn, longitudeColumn) => {
     return fetch(path)
       .then((r) => r.json())
       .then((data) => {
+        if (!data || !Array.isArray(data.rows)) {
+          progressDiv.innerHTML = "Failed to load map data.";
+          return;
+        }
         let markerList = [];
         data.rows.forEach((row) => {
           if (isValidLatitude(row[latitudeColumn]) && isValidLongitude(row[longitudeColumn])) {
@@ -304,7 +308,10 @@ const addClusterMap = (latitudeColumn, longitudeColumn) => {
   });
   map.addLayer(markerClusterGroup);
   let path = location.pathname + ".json" + location.search;
-  const qs = "_size=max&_labels=on&_extra=count&_extra=next_url&_shape=objects";
+  // The next_url parameter was removed from extra - requesting
+  // it now returns a 400 error. The next_url key is still included in JSON
+  // responses by default, so pagination continues to work without it.
+  const qs = "_size=max&_labels=on&_extra=count&_shape=objects";
   if (path.indexOf("?") > -1) {
     path += "&" + qs;
   } else {
