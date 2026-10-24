@@ -1,5 +1,7 @@
 from datasette_cluster_map import location_columns_from_columns
 from datasette.app import Datasette
+from packaging.version import Version
+import datasette
 import pytest
 import sqlite_utils
 import textwrap
@@ -150,6 +152,19 @@ async def test_plugin_is_installed():
     )
     assert response.status_code == 200
     assert "const clusterMapEscapeHTML" in response.text
+
+
+@pytest.mark.asyncio
+@pytest.mark.skipif(
+    Version(datasette.__version__) < Version("1.0a1"),
+    reason="Datasette 1.x rejects _extra=next_url, earlier versions accept it",
+)
+async def test_datasette_1x_rejects_next_url_extra(db_path):
+    # This 400 is why the plugin must not request _extra=next_url
+    # (see test_map_does_not_request_next_url in test_playwright.py)
+    ds = Datasette([db_path])
+    response = await ds.client.get("/test/places.json?_extra=next_url")
+    assert response.status_code == 400
 
 
 @pytest.mark.asyncio
